@@ -1,0 +1,180 @@
+### 🗂️ Virtual File System in C++ (Trie-based Implementation)
+
+---
+
+#### 📌 Problem Description
+
+Build a virtual file system that supports:
+
+- `createPath(path: string, value: int)`: Creates a new path with the associated value if:
+  - The full path doesn’t already exist.
+  - The parent path exists.
+- `get(path: string)`: Retrieves the value for a given path, or returns -1 if not found.
+
+Paths follow UNIX-style: `/a/b/c`  
+Invalid paths: `""`, `"/"` (single slash only)
+
+---
+
+#### 💡 Intuition
+
+To efficiently store and manage paths, we use a **Trie (Prefix Tree)**:
+
+- Each `TrieNode` holds a part of the path.
+- Full paths are created by traversing from the root through children nodes.
+- Nodes hold a `value` and `children`.
+
+---
+
+#### 🧠 Solution Design
+
+- `TrieNode`: Represents each segment in the path with:
+  - `unordered_map<string, TrieNode*> children`
+  - `int value`
+- `FileSystem`:
+  - `createPath()` inserts new paths only if parent exists and the path doesn’t exist.
+  - `get()` traverses the path and returns the node's value.
+
+---
+
+#### ✅ Example Operations
+
+```cpp
+createPath("/a", 5)         => true
+get("/a")                   => 5
+createPath("/a/b", 10)      => true
+createPath("/c/a/b", 20)    => false ("/c/a" doesn't exist)
+get("/a/b")                 => 10
+get("/c/a/b")               => -1
+```
+
+---
+
+#### 🧾 Code Implementation
+
+```cpp
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+#include <string>
+using namespace std;
+
+// Utility: Split path by '/'
+vector<string> split(const string& path) {
+    vector<string> result;
+    for (int i = 0; i < path.size(); i++) {
+        string val = "";
+        int j = i;
+        while (j < path.size() && path[j] != '/') {
+            val += path[j];
+            j++;
+        }
+        if (!val.empty()) result.push_back(val);  // Avoid empty segments
+        i = j;
+    }
+    return result;
+}
+
+// Trie Node to represent each path segment
+class TrieNode {
+public:
+    unordered_map<string, TrieNode*> children;
+    int value;
+
+    TrieNode(int v) {
+        value = v;
+    }
+
+    // Insert a path with value if parent exists and path doesn't already exist
+    bool insert(const string w, int v) {
+        TrieNode* node = this;
+        vector<string> parts = split(w);
+
+        for (int i = 0; i < parts.size() - 1; i++) {
+            string check = parts[i];
+            if (!node->children.count(check)) {
+                return false; // Parent path missing
+            }
+            node = node->children[check];
+        }
+
+        if (node->children.count(parts.back())) {
+            return false; // Path already exists
+        }
+
+        node->children[parts.back()] = new TrieNode(v);
+        return true;
+    }
+
+    // Search and return value if path exists
+    int search(const string& w) {
+        TrieNode* node = this;
+        vector<string> parts = split(w);
+
+        for (int i = 0; i < parts.size(); i++) {
+            string check = parts[i];
+            if (!node->children.count(check)) {
+                return -1;
+            }
+            node = node->children[check];
+        }
+        return node->value;
+    }
+};
+
+// FileSystem API using TrieNode
+class FileSystem {
+private:
+    TrieNode* trieRoot;
+
+public:
+    FileSystem() {
+        trieRoot = new TrieNode(-1);  // root has no value
+    }
+
+    bool createPath(const std::string& path, int value) {
+        return trieRoot->insert(path, value);
+    }
+
+    int get(const std::string& path) {
+        return trieRoot->search(path);
+    }
+
+    ~FileSystem() {
+        // You could implement a proper destructor to free memory if needed
+    }
+};
+
+// Sample usage
+int main() {
+    FileSystem* obj = new FileSystem();
+
+    cout << obj->createPath("/a", 5) << endl;        // true
+    cout << obj->get("/a") << endl;                  // 5
+    cout << obj->createPath("/a/b", 10) << endl;     // true
+    cout << obj->createPath("/c/a/b", 20) << endl;   // false
+    cout << obj->get("/a/b") << endl;                // 10
+
+    delete obj;
+    return 0;
+}
+```
+
+---
+
+#### 🧪 Output
+
+```
+1
+5
+1
+0
+10
+```
+
+---
+
+#### 📘 Notes
+
+- Edge cases like repeated slashes or invalid root paths should be filtered explicitly if required.
+- You can extend this to support `update`, `delete`, or even hierarchical value aggregation.

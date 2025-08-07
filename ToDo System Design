@@ -1,0 +1,116 @@
+// Online C++ compiler to run C++ program online
+// 2590. Design a Todo List
+// Description
+// Design a Todo List Where users can add tasks, mark them as complete, or get a list of pending tasks. Users can also add tags to tasks and can filter the tasks by certain tags.
+
+// Implement the TodoList class:
+
+// TodoList() Initializes the object.
+// int addTask(int userId, String taskDescription, int dueDate, List<String> tags) Adds a task for the user with the ID userId with a due date equal to dueDate and a list of tags attached to the task. The return value is the ID of the task. This ID starts at 1 and is sequentially increasing. That is, the first task's id should be 1, the second task's id should be 2, and so on.
+// List<String> getAllTasks(int userId) Returns a list of all the tasks not marked as complete for the user with ID userId, ordered by the due date. You should return an empty list if the user has no uncompleted tasks.
+// List<String> getTasksForTag(int userId, String tag) Returns a list of all the tasks that are not marked as complete for the user with the ID userId and have tag as one of their tags, ordered by their due date. Return an empty list if no such task exists.
+// void completeTask(int userId, int taskId) Marks the task with the ID taskId as completed only if the task exists and the user with the ID userId has this task, and it is uncompleted.
+#include <iostream>
+#include <vector>
+#include <map>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+class TodoList{
+    public:
+    int taskid=0;
+    map<int, vector<pair<int, int>>> add_task;
+    map<int, vector<string>> task_tags;
+    map<int, string> task_description;
+    map<int,int> task_completed;
+    
+    TodoList(){
+        
+    }
+    int addTask(int userId, string taskDescription, int dueDate, vector<string>& tags){
+        taskid++;
+        add_task[userId].push_back({dueDate, taskid});
+        for (const string& tag : tags) {
+        task_tags[taskid].push_back(tag);
+        }
+     task_description[taskid]=taskDescription;
+        return taskid;
+    }
+    void completeTask(int userId, int taskId){
+        auto tasklist = add_task[userId];
+        bool flag = false;
+        for(auto it : tasklist){
+            if(it.second == taskId){
+                flag = true;
+                break;
+            }
+        }
+        if(task_description.find(taskId) != task_description.end() && flag==true)
+        task_completed[taskId]=userId;
+    }
+    vector<string> getAllTasks(int userId){
+        vector<string> result;
+        auto task_details = add_task[userId];
+        sort(task_details.begin(), task_details.end());
+        for(auto it : task_details){
+            int check_task = it.second;
+            if(task_completed.find(check_task) == task_completed.end()){
+            string taskdescription = task_description[check_task];
+            result.push_back(taskdescription);
+        }
+        }
+        return result;
+    }
+    vector<string> getTasksForTag(int userId, string tag){
+        vector<string> result;
+        auto task_list = add_task[userId];
+        sort(task_list.begin(), task_list.end());
+        for(auto it : task_list){
+            int taskid = it.second;
+            auto vec = task_tags[taskid];
+            bool flag = false;
+            for(auto tag_value : vec){
+                if(tag_value == tag){
+                    flag = true;
+                    break;
+                }
+            }
+            if(task_completed.find(taskid) == task_completed.end() && flag){
+                result.push_back(task_description[taskid]);
+            }
+        }
+        return result;
+    }
+    
+};
+
+
+
+int main() {
+    // Write C++ code here
+    TodoList todo;
+
+    vector<string> tags1 = {"work", "urgent"};
+    vector<string> tags2 = {"personal"};
+    vector<string> tags3 = {"work"};
+
+    todo.addTask(1, "Submit report", 20250810, tags1);
+    todo.addTask(1, "Buy groceries", 20250808, tags2);
+    todo.addTask(1, "Team meeting", 20250809, tags3);
+
+    todo.completeTask(1, 2);
+
+    vector<string> allTasks = todo.getAllTasks(1);
+    cout << "Pending Tasks:\n";
+    for (string& task : allTasks)
+        cout << task << endl;
+
+    vector<string> workTasks = todo.getTasksForTag(1, "work");
+    cout << "\nWork Tagged Tasks:\n";
+    for (string& task : workTasks)
+        cout << task << endl;
+
+    return 0;
+}

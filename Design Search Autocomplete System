@@ -47,3 +47,111 @@ Each tested sentence will be a sequence of characters c that end with the charac
 Each tested sentence will have a length in the range [1, 200].
 The words in each input sentence are separated by single spaces.
 At most 5000 calls will be made to input
+
+
+
+// Online C++ compiler to run C++ program online
+#include <iostream>
+#include <bits/stdc++.h>
+using namespace std;
+struct Trie{
+    Trie* children[27];
+    // the value is associated with each word:
+    int v;
+    // the word associated
+    string w;
+    Trie(){
+        memset(children, 0, sizeof(children));
+        v=0; // no frequency yet
+        w=""; // intially now word is being stored
+    }
+    void insert(string& word, int t){
+        Trie* node = this; // start from root node
+        for(char c : word){
+            int idx = (c == ' ') ? 26 : (c-'a');
+            if(!node->children[idx]){
+                node->children[idx] = new Trie();
+            }
+            node = node->children[idx];
+            
+        }
+        node->v+=t;
+        node->w = word;
+    }
+    Trie* Search(const string& pref){
+        Trie* node = this;
+        for(char c : pref){
+            int idx = (c == ' ') ? 26 : (c - 'a');
+            if(!node->children[idx]){
+                return nullptr;
+            }
+            node=node->children[idx];
+        }
+        return node;
+    }
+    
+};
+class AutocompleteSystem{
+    private:
+    Trie* trie; // root of the trie
+    string t;
+    struct compare{
+        bool operator()(Trie* a, Trie* b){
+            // if two freq are equal:
+             if (a->v == b->v) return a->w < b->w; // pop lexicographically larger
+            return a->v > b->v; // pop smaller frequency
+        }
+    };
+    void dfs(Trie* node, priority_queue<Trie*, vector<Trie*>, compare>& pq){
+        if(!node) return;
+        if(node->v > 0){
+            pq.push(node);
+            if(pq.size()>3){
+                pq.pop();
+            }
+        }
+        for(Trie* next : node->children){
+            dfs(next, pq);
+        }
+        
+    }
+    public:
+    AutocompleteSystem(vector<string>& sentences, vector<int>& times){
+        trie = new Trie();
+        for(int i=0;i<sentences.size();i++){
+            trie->insert(sentences[i], times[i]);
+        }
+        t="";
+    }
+    vector<string> input(char c){
+        vector<string> res;
+        if(c == '#'){
+            trie->insert(t, 1);
+            t.clear();
+            return res;
+        }
+        t.push_back(c);
+        Trie* node = trie->Search(t);
+        if(!node) return res;
+        priority_queue<Trie*, vector<Trie*>, compare> pq;
+        dfs(node, pq);
+        while(!pq.empty()){
+            res.insert(res.begin(), pq.top()->w);
+            pq.pop();
+        }
+        return res;
+        
+    }
+};
+
+int main() {
+    // Write C++ code here
+  
+     vector<string> sentences = {"i love you", "island", "ironman", "i love leetcode"};
+    vector<int> times = {5, 3, 2, 2};
+    AutocompleteSystem ac(sentences, times);
+
+    for (string& s : ac.input('i')) cout << s << endl;
+    return 0;
+}
+
